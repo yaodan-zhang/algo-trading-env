@@ -16,7 +16,7 @@ unsigned int asset::width = 20;
 int const Num_Of_Threads = 5;
 
 // Number of price data of an individual asset to arrive at a time.
-unsigned int const Period = 10;
+unsigned int const Period = 5;
 
 // Pre-set individual assets for consideration. Similar to lists of outsider subscriptions.
 // Here we store the ticker name of an asset, which corresponds to the tickers in the "ticks" folder.
@@ -149,14 +149,30 @@ int main(){
     // Print list every fixed amount of time
     // Optimal: Print list based on condition: 1. task_queue is empty 2. every future was waited for
     for(;;){
-        auto time_point = chrono::system_clock::to_time_t(chrono::system_clock::now());
-        cout << "Stock list: " << ctime(&time_point) << endl;
-        cout << StockList << endl;
-        cout << "Index list: " << ctime(&time_point) << endl;
-        cout << IndexList << endl;
-        cout << "ETF list: " << ctime(&time_point) << endl;
-        cout << ETFList << endl;
         this_thread::sleep_for(chrono::seconds(5));
+        auto time_point = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        #if 1 // View by ticker lexigraphically ascending
+        cout << "Stock list: " << ctime(&time_point) << endl;
+        StockList.view_by_ticker();
+        cout << endl;
+        cout << "Index list: " << ctime(&time_point) << endl;
+        IndexList.view_by_ticker();
+        cout << endl;
+        cout << "ETF list: " << ctime(&time_point) << endl;
+        ETFList.view_by_ticker();
+        cout << endl;
+
+        # else // View by price movement descending
+        cout << "Stock list: " << ctime(&time_point) << endl;
+        StockList.view_by_gain();
+        cout << endl;
+        cout << "Index list: " << ctime(&time_point) << endl;
+        IndexList.view_by_gain();
+        cout << endl;
+        cout << "ETF list: " << ctime(&time_point) << endl;
+        ETFList.view_by_gain();
+        cout << endl;
+        #endif
     }
     return 0;
 }
