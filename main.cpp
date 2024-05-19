@@ -10,7 +10,7 @@
 using namespace std;
 using namespace my_algo_trading;
 // Static member initialization for print layout.
-unsigned int asset::width = 10;
+unsigned int asset::width = 20;
 
 // Number of threads.
 int const Num_Of_Threads = 5;
@@ -79,7 +79,6 @@ void generate_tasks(map<string, unique_ptr<ifstream>> &data_src){
         // read price data line
         for (unsigned int i=0;i<period;i++){
             std::getline(*file_ptr,line);
-            //cout << line << endl;
             task.push_back(line);
         }
         insert_task(task);
@@ -94,23 +93,18 @@ void produce(){
     for(;;){
         generate_tasks(data_source);
         this_thread::sleep_for(chrono::seconds(5));
-    }
-}
+    }}
 
 // Consumer Thread Functions:
 template<typename T>
 bool process_task_asset_type(vector<string> &task, string &ticker, vector<string> &type_symbols, assetList<T> &type_list){
     auto check_ticker = [=](unique_ptr<T>&ap){return ap->ticker==ticker;};
     if(std::find(type_symbols.begin(),type_symbols.end(),ticker)!=type_symbols.end()){
-        
         auto ap = std::find_if(type_list.objects.begin(),type_list.objects.end(),check_ticker);
         if (ap == type_list.objects.end()) {return false;}
         else {
-            cout << ticker<<"1" << endl;
             task>>dynamic_cast<asset&>(**ap);
-            
             (**ap).finalize();
-            cout << "success1";
             return true;
             }
     } else {
@@ -125,7 +119,6 @@ void process_task(vector<string> &task){
     process_task_asset_type<my_algo_trading::etf>(task,ticker,ETFSymbols,ETFList))) {
         throw runtime_error("asset doesn't exist!");
     }
-    cout << "1" << endl;
 }
 // The main consumer function.
 void consume(){
@@ -134,7 +127,6 @@ void consume(){
     for(;;){
         if (get_task(task)){
             process_task(task);
-            cout << "0" << endl;
         }
         this_thread::sleep_for(chrono::milliseconds(10));
     }
@@ -154,9 +146,12 @@ int main(){
     // Print list every fixed amount of time
     // Optimal: Print list based on condition: 1. task_queue is empty 2. every future was waited for
     for(;;){
-        cout<<StockList;
-        cout<<IndexList;
-        cout<<ETFList;
+        cout << "stock list:" << endl;
+        cout << StockList << endl;
+        cout << "index list:" << endl;
+        cout << IndexList << endl;
+        cout << "etf list:" << endl;
+        cout << ETFList << endl;
         this_thread::sleep_for(chrono::seconds(5));
     }
     return 0;

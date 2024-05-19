@@ -58,7 +58,7 @@ class asset{
 asset::~asset(){}
 // Calculate the price percent move during this period, which is the first and benchmark alpha.
 double asset::percent_move() const{
-    return (close[period-1]-open[0])/open[0];
+    return (close[period-1]-open[0])/open[0] * 100;
 }
 // Data source came from yahoo!finance, the format is:
 // ticker (first line)
@@ -72,22 +72,20 @@ void operator>>(vector<string> &records, asset &a){
     a.volume.clear();
     // Insert new records.
     string record;
-    regex pattern(R"((\.+) (\d+\.\d+) (\d+\.\d+) (\d+\.\d+) (\d+\.\d+) (\d+\.\d+) (\d+\.*\d*))");
+    regex pattern(R"(^(\d{4}-\d{2}-\d{2}),([\d.]+),([\d.]+),([\d.]+),([\d.]+),([\d.]+),(\d+)$)");
     smatch matches;
     a.period = records.size()-1;// Exclude ticker line
-    /*for (auto &record : records){
-        
+    for (auto &record : records){
         // Don't match the first line
         if (regex_match(record, matches, pattern)){
-            std::cout << record << std::endl;
             // Set basic candlestick fields.
-            a.open.push_back(stod(string(matches[1].str())));
-            a.high.push_back(stod(string(matches[2].str())));
-            a.low.push_back(stod(string(matches[3].str())));
-            a.close.push_back(stod(string(matches[5].str())));
-            a.volume.push_back(stoi(string(matches[6].str())));
+            a.open.push_back(stod(string(matches[2].str())));
+            a.high.push_back(stod(string(matches[3].str())));
+            a.low.push_back(stod(string(matches[4].str())));
+            a.close.push_back(stod(string(matches[6].str())));
+            a.volume.push_back(stol(string(matches[7].str())));
         }
-    }*/
+    }
 }
 // Overload output operator to print the asset.
 void operator<<(std::ostream &os, asset const &a){
@@ -96,7 +94,7 @@ void operator<<(std::ostream &os, asset const &a){
     
     // Print alphas and round each double to 2 decimal places.
     for (auto &alpha : a.alphas){
-        os << string(fmt::format("{:^{}}", std::round(alpha * 1000.0)/1000.0, w));
+        os << string(fmt::format("{:^{}}", std::round(alpha * 100.0)/100.0, w));
     }
     os << std::endl;
 }
@@ -123,10 +121,9 @@ class stock: public asset{
     }
     // Set header for this period.
     void set_header() override{
-        // Clean previous header.
-        headerList.clear();
-        // Set new header for this period.
-        headerList.push_back("price_move%");
+        // Reset previous header.
+        headerList = {"ticker","price_move%"};
+        // Insert new header for this period.
         for (auto &header : StockAlphaList){
             headerList.push_back(header);
         }
@@ -144,8 +141,7 @@ class index: public asset{
         }
     }
     void set_header() override{
-        headerList.clear();
-        headerList.push_back("price_move%");
+        headerList = {"ticker","price_move%"};
         for (auto &header : IndexAlphaList){
             headerList.push_back(header);
         }
@@ -163,8 +159,7 @@ class etf: public asset{
         }
     }
     void set_header() override{
-        headerList.clear();
-        headerList.push_back("price_move%");
+        headerList = {"ticker","price_move%"};
         for (auto &header : ETFAlphaList){
             headerList.push_back(header);
         }

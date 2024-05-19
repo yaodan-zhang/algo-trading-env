@@ -61,10 +61,11 @@ std::ostream& operator<<(std::ostream& os, assetList<O> const &l){
     os << std::endl;
     // Print objects
     for(auto &o:l.objects){
-        //asset &o_a = dynamic_cast<asset&>(*o);
+        os << string(fmt::format("{:^{}}",o->ticker,w));
         for (auto & alpha: o->alphas){
-            os <<  alpha << std::endl;
+            os << string(fmt::format("{:^{}}",std::round(alpha * 100.0)/100.0,w));
         }
+        os << std::endl;
     }
     return os;
 }
