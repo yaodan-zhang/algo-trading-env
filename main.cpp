@@ -15,6 +15,9 @@ unsigned int asset::width = 20;
 // Number of threads.
 int const Num_Of_Threads = 5;
 
+// Number of price data of an individual asset to arrive at a time.
+unsigned int const Period = 10;
+
 // Pre-set individual assets for consideration. Similar to lists of outsider subscriptions.
 // Here we store the ticker name of an asset, which corresponds to the tickers in the "ticks" folder.
 vector<string> StockSymbols = {"AAPL", "AMZN", "META", "NVDA", "TSLA"};
@@ -72,12 +75,11 @@ void read_all_data(map<string, unique_ptr<ifstream>> &data_src){
 }
 // Generate tasks and insert them into the global task queue.
 void generate_tasks(map<string, unique_ptr<ifstream>> &data_src){
-    unsigned int const period = 10; // # data pieces for one asset to receive at one time
     for (auto &[ticker,file_ptr] : data_src) {
         vector<string> task = {ticker}; // create ticker line
         string line;
         // read price data line
-        for (unsigned int i=0;i<period;i++){
+        for (unsigned int i=0;i<Period;i++){
             std::getline(*file_ptr,line);
             task.push_back(line);
         }
@@ -132,6 +134,7 @@ void consume(){
     }
 }
 
+// Main function.
 int main(){
     // Initialize asset lists
     StockSymbols>>StockList;
@@ -146,11 +149,12 @@ int main(){
     // Print list every fixed amount of time
     // Optimal: Print list based on condition: 1. task_queue is empty 2. every future was waited for
     for(;;){
-        cout << "stock list:" << endl;
+        auto time_point = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        cout << "Stock list: " << ctime(&time_point) << endl;
         cout << StockList << endl;
-        cout << "index list:" << endl;
+        cout << "Index list: " << ctime(&time_point) << endl;
         cout << IndexList << endl;
-        cout << "etf list:" << endl;
+        cout << "ETF list: " << ctime(&time_point) << endl;
         cout << ETFList << endl;
         this_thread::sleep_for(chrono::seconds(5));
     }

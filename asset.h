@@ -17,12 +17,20 @@ using std::regex;
 using std::smatch;
 using std::regex_match;
 using std::unique_ptr;
+using std::make_unique;
 using std::string;
 using std::vector;
 namespace my_algo_trading{
 class asset{
     public:
-    asset(string ticker) : ticker(ticker){};
+    asset(string ticker) : 
+    ticker(ticker){
+        open = make_unique<vector<double>>();
+        high = make_unique<vector<double>>();
+        low = make_unique<vector<double>>();
+        close = make_unique<vector<double>>();
+        volume = make_unique<vector<size_t>>();
+    };
     virtual ~asset()=0;
     // Conveniently input raw candlestick charts.
     friend void operator>>(unique_ptr<vector<string>> &, unique_ptr<asset> const &);
@@ -45,11 +53,11 @@ class asset{
     // Base Fields
     string ticker;
     unsigned int period; // Number of records for one period, e.g., receive ticks every 5 mins with 10 ticks at a time.
-    vector<double> open;
-    vector<double> high;
-    vector<double> low;
-    vector<double> close;
-    vector<size_t> volume;
+    unique_ptr<vector<double>> open;
+    unique_ptr<vector<double>> high;
+    unique_ptr<vector<double>> low;
+    unique_ptr<vector<double>> close;
+    unique_ptr<vector<size_t>> volume;
     vector<double> alphas; // Alphas for subclasses
     static unsigned int width; // Print layout width
     std::list<string> headerList;
@@ -58,18 +66,18 @@ class asset{
 asset::~asset(){}
 // Calculate the price percent move during this period, which is the first and benchmark alpha.
 double asset::percent_move() const{
-    return (close[period-1]-open[0])/open[0] * 100;
+    return ((*close)[period-1]-(*open)[0])/(*open)[0] * 100;
 }
 // Data source came from yahoo!finance, the format is:
 // ticker (first line)
 // Date Open High Low Close Adj_Close Volume (one or more such line)
 void operator>>(vector<string> &records, asset &a){
     // Clear previous records.
-    a.open.clear();
-    a.high.clear();
-    a.low.clear();
-    a.close.clear();
-    a.volume.clear();
+    a.open->clear();
+    a.high->clear();
+    a.low->clear();
+    a.close->clear();
+    a.volume->clear();
     // Insert new records.
     string record;
     regex pattern(R"(^(\d{4}-\d{2}-\d{2}),([\d.]+),([\d.]+),([\d.]+),([\d.]+),([\d.]+),(\d+)$)");
@@ -79,11 +87,11 @@ void operator>>(vector<string> &records, asset &a){
         // Don't match the first line
         if (regex_match(record, matches, pattern)){
             // Set basic candlestick fields.
-            a.open.push_back(stod(string(matches[2].str())));
-            a.high.push_back(stod(string(matches[3].str())));
-            a.low.push_back(stod(string(matches[4].str())));
-            a.close.push_back(stod(string(matches[6].str())));
-            a.volume.push_back(stol(string(matches[7].str())));
+            a.open->push_back(stod(string(matches[2].str())));
+            a.high->push_back(stod(string(matches[3].str())));
+            a.low->push_back(stod(string(matches[4].str())));
+            a.close->push_back(stod(string(matches[6].str())));
+            a.volume->push_back(stol(string(matches[7].str())));
         }
     }
 }
@@ -91,7 +99,7 @@ void operator>>(vector<string> &records, asset &a){
 void operator<<(std::ostream &os, asset const &a){
     unsigned int const w = asset::width;
     // Print ticker
-    
+    os << string(fmt::format("{:^{}}", a.ticker, w));
     // Print alphas and round each double to 2 decimal places.
     for (auto &alpha : a.alphas){
         os << string(fmt::format("{:^{}}", std::round(alpha * 100.0)/100.0, w));
@@ -116,7 +124,7 @@ class stock: public asset{
         alphas.push_back(this->percent_move());
         // Set alphas
         for (auto &calculate_alpha : StockAlphaHelper) {
-            alphas.push_back(calculate_alpha(&open,&high,&low,&close,&volume,period));
+            alphas.push_back(calculate_alpha(open,high,low,close,volume,period));
         }
     }
     // Set header for this period.
@@ -137,7 +145,7 @@ class index: public asset{
         alphas.clear();
         alphas.push_back(this->percent_move());
         for (auto &calculate_alpha : IndexAlphaHelper) {
-            alphas.push_back(calculate_alpha(&open,&high,&low,&close,&volume,period));
+            alphas.push_back(calculate_alpha(open,high,low,close,volume,period));
         }
     }
     void set_header() override{
@@ -155,7 +163,7 @@ class etf: public asset{
         alphas.clear();
         alphas.push_back(this->percent_move());
         for (auto &calculate_alpha : ETFAlphaHelper) {
-            alphas.push_back(calculate_alpha(&open,&high,&low,&close,&volume,period));
+            alphas.push_back(calculate_alpha(open,high,low,close,volume,period));
         }
     }
     void set_header() override{

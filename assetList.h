@@ -61,11 +61,7 @@ std::ostream& operator<<(std::ostream& os, assetList<O> const &l){
     os << std::endl;
     // Print objects
     for(auto &o:l.objects){
-        os << string(fmt::format("{:^{}}",o->ticker,w));
-        for (auto & alpha: o->alphas){
-            os << string(fmt::format("{:^{}}",std::round(alpha * 100.0)/100.0,w));
-        }
-        os << std::endl;
+        os << *o;
     }
     return os;
 }

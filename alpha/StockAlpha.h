@@ -2,6 +2,7 @@
 #include<list>
 #include<string>
 #include<vector>
+#include<memory>
 using std::vector;
 // Customize Alpha - Production alphas by quantitative researchers.
 // Here the alphas are randomly selected as a demo.
@@ -15,15 +16,15 @@ std::list<std::string> StockAlphaList = {
     "MFI" // Money Flow Index
     };
 
-typedef double (*SAFuncType)(std::vector<double> *, std::vector<double> *, std::vector<double> *, std::vector<double> *, std::vector<size_t> *, unsigned int);
+typedef double (*SAFuncType)(std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<size_t>>&,unsigned int&);
 
-double AMFV(vector<double> *open, vector<double> *, vector<double> *, vector<double> *, vector<size_t> *, unsigned int);
-double MFI(vector<double> *open, vector<double> *, vector<double> *, vector<double> *, vector<size_t> *, unsigned int);
+double AMFV(std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<size_t>>&,unsigned int&);
+double MFI(std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<size_t>>&,unsigned int&);
 vector<SAFuncType> StockAlphaHelper = {&AMFV,&MFI};
 
 // Stock Alphas Implementations: Formula came from https://docs.anychart.com/Stock_Charts/Technical_Indicators/Mathematical_Description
 // Calculate average Money Flow Volume
-double AMFV(vector<double> *open, vector<double> *high, vector<double> *low, vector<double> *close, vector<size_t> *volume, unsigned int period){
+double AMFV(std::unique_ptr<std::vector<double>>&open, std::unique_ptr<std::vector<double>>&high, std::unique_ptr<std::vector<double>>&low, std::unique_ptr<std::vector<double>>&close, std::unique_ptr<std::vector<size_t>>&volume, unsigned int &period){
     double MFV = 0;
     for (unsigned int i=0; i< period; i++){
         double MFM_i = (((*close)[i]-(*low)[i])-((*high)[i]-(*close)[i]))/((*high)[i]-(*low)[i]);
@@ -34,7 +35,7 @@ double AMFV(vector<double> *open, vector<double> *high, vector<double> *low, vec
 }
 
 // Calculate Money Flow Index
-double MFI(vector<double> *open, vector<double> *high, vector<double> *low, vector<double> *close, vector<size_t> *volume, unsigned int period){
+double MFI(std::unique_ptr<std::vector<double>>&open, std::unique_ptr<std::vector<double>>&high, std::unique_ptr<std::vector<double>>&low, std::unique_ptr<std::vector<double>>&close, std::unique_ptr<std::vector<size_t>>&volume, unsigned int &period){
     // Calculate typical price
     double typical_price_prev = ((*high)[0]+(*low)[0]+(*close)[0])/3;
     double total_positive_money_flow = 0;
