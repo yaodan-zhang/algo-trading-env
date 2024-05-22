@@ -6,6 +6,7 @@
 #include<stdexcept>
 #include<map>
 #include<chrono>
+#include<condition_variable>
 using namespace std;
 using namespace my_algo_trading;
 // Static member initialization for print layout.
@@ -28,29 +29,16 @@ assetList<my_algo_trading::stock> StockList;
 assetList<my_algo_trading::index> IndexList;
 assetList<my_algo_trading::etf> ETFList;
 
-// Task queue, each task is a vector of strings as follows:
+// Tread-safe task queue, each task is a vector of strings as follows:
 // ticker (first line)
-// Date Open High Low Close Adj_Close Volume (one or more such line, total number is the period)
+// Date Open High Low Close Adj_Close Volume (one or more such line, total number is Num_Of_Price_Data_Per_Period)
 std::list<vector<string>> task_queue;
-// Thread-safe list operations.
 mutex m; 
-void insert_task(vector<string> &task){
-    lock_guard guard(m);
-    task_queue.push_back(task);
-}
-bool get_task(vector<string> &task){
-    lock_guard guard(m);
-    if (task_queue.empty()){
-        return false;
-    }
-    task = task_queue.front();
-    task_queue.pop_front();
-    return true;
-}
+condition_variable cond;
 
 // Producer Thread Functions: *note: We use daily price data to simulate intra-day price data.
 // Read all symbols of a particular asset type. This function is just a demo so we store all asset types in the same folder "price-data".
-// In real-world real-time data streaming, we expect that each asset type / individual asset comes from a different (customized) source.
+// In real-world live data streaming, we expect that each asset type / individual asset comes from a different (customized) source.
 void read_symbols(vector<string>& symbols, map<string, unique_ptr<ifstream>> &data_src){
     for (auto &symbol : symbols){
         string file_path = "./price-data/"+symbol+".csv";
@@ -82,7 +70,9 @@ void generate_tasks(map<string, unique_ptr<ifstream>> &data_src){
             std::getline(*file_ptr,line);
             task.push_back(line);
         }
-        insert_task(task);
+        lock_guard lk(m);
+        task_queue.push_back(task);
+        cond.notify_one();
     }
 }
 // The main producer function.
@@ -93,7 +83,7 @@ void produce(){
     // Generate tasks into the task queue every fixed amount of time.
     for(;;){
         generate_tasks(data_source);
-        this_thread::sleep_for(chrono::seconds(5));//Note4:slides for time
+        this_thread::sleep_for(5s);
     }}
 
 // Consumer Thread Functions:
@@ -122,15 +112,17 @@ void process_task(vector<string> &task){
     }
 }
 // The main consumer function.
-// Note 2: condition variables don't do spinning
 void consume(){
     // Spin on the task queue and dequeue a task and process it.
     vector<string> task;
     for(;;){
-        if (get_task(task)){
-            process_task(task);
+        {
+        unique_lock<mutex> lk(m);
+        cond.wait(lk,[]{return !task_queue.empty();});
+        task = move(task_queue.front());
+        task_queue.pop_front();
         }
-        this_thread::sleep_for(chrono::milliseconds(10));
+        process_task(task);
     }
 }
 
@@ -140,17 +132,17 @@ int main(){
     StockSymbols>>StockList;
     IndexSymbols>>IndexList;
     ETFSymbols>>ETFList;
-    // Spawn producer and consumer threads.
+    // Spawn producer thread.
     jthread producer(produce);
+    // Spawn consumer threads.
     vector<jthread> consumers;
-    for(int i=0;i<Num_Of_Threads;i++){
+    for(unsigned int i=0;i<Num_Of_Threads;i++){
         consumers.push_back(jthread(consume));
     }
-    // Print list every fixed amount of time
-    // Optimal: Print list based on condition: 1. task_queue is empty 2. every future was waited for
+    // Print list when all tasks of this period are done.
     for(;;){
         //Note 8: add a printing thread and use a cond var to signal it.
-        this_thread::sleep_for(chrono::seconds(5));
+        this_thread::sleep_for(5s);
         auto time_point = chrono::system_clock::to_time_t(chrono::system_clock::now());
         // Note 7: constexp
         #if 1 // View by ticker lexigraphically ascending
