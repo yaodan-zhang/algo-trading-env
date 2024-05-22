@@ -5,22 +5,25 @@
 #include<numeric>
 #include<memory>
 #include<algorithm>
-using std::vector;
+#include<functional>
 namespace my_algo_trading{
 std::list<std::string> ETFAlphaList = {
     "LM", // Largest Momentum
     "SMA" // Simple Moving Average using closing price
 };
-typedef double (*EAFuncType)(std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<size_t>>&,unsigned int&);
+// ETF type definitions.
+using EPriceT = std::unique_ptr<std::vector<double>>&;
+using EVolT = std::unique_ptr<std::vector<size_t>>&;
+using EDataT = unsigned int&;
+using EAlphaT = std::function<double(EPriceT,EPriceT,EPriceT,EPriceT,EVolT,EDataT)>;
+// ETF alpha declarations.
+double LM(EPriceT,EPriceT,EPriceT,EPriceT,EVolT,EDataT);
+double SMA(EPriceT,EPriceT,EPriceT,EPriceT,EVolT,EDataT);
+std::vector<EAlphaT> ETFAlphaHelper = {LM, SMA};
 
-double LM(std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<size_t>>&,unsigned int&);
-double SMA(std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<double>>&,std::unique_ptr<std::vector<size_t>>&,unsigned int&);
-vector<EAFuncType> ETFAlphaHelper = {&LM, &SMA};
-
-// Alpha Implemantations: Formula came from https://docs.anychart.com/Stock_Charts/Technical_Indicators/Mathematical_Description
-
-// Calculate Largest Price Momentum
-double LM(std::unique_ptr<std::vector<double>>&, std::unique_ptr<std::vector<double>>&, std::unique_ptr<std::vector<double>>&, std::unique_ptr<std::vector<double>>&close, std::unique_ptr<std::vector<size_t>>&, unsigned int &period) {
+// ETF alpha Implemantations: formula came from https://docs.anychart.com/Stock_Charts/Technical_Indicators/Mathematical_Description
+// 1. Calculate Largest Price Momentum
+double LM(EPriceT, EPriceT, EPriceT, EPriceT close, EVolT, EDataT period) {
     double momentum = 0;
     for(unsigned int i=1;i<period;i++){
         double momentum_i = (*close)[i]/(*close)[i-1];
@@ -28,8 +31,8 @@ double LM(std::unique_ptr<std::vector<double>>&, std::unique_ptr<std::vector<dou
     }
     return momentum;
 }
-// Calculate Simple Moving Average
-double SMA(std::unique_ptr<std::vector<double>>&, std::unique_ptr<std::vector<double>>&, std::unique_ptr<std::vector<double>>&, std::unique_ptr<std::vector<double>>&close, std::unique_ptr<std::vector<size_t>>&, unsigned int &period){
+// 2. Calculate Simple Moving Average
+double SMA(EPriceT, EPriceT, EPriceT, EPriceT close, EVolT, EDataT period){
     double sum = std::accumulate(close->begin(), close->end(), 0.0);
     return sum/period;
 }

@@ -1,5 +1,5 @@
-/* The main difference between different asset types is they have different alphas
-and possibly different period size to receive the tick, e.g., every 5 mins, every 10 mins. */
+/* The main difference between different asset types is they have different production alphas
+and possibly different additional features. */
 #pragma once
 #include"./alpha/ETFAlpha.h"
 #include"./alpha/IndexAlpha.h"
@@ -20,20 +20,18 @@ using std::unique_ptr;
 using std::make_unique;
 using std::string;
 using std::vector;
+using std::list;
 namespace my_algo_trading{
+using priceT = unique_ptr<vector<double>>;
+using volT = unique_ptr<vector<size_t>>;
+using alphaT = vector<double>;
 class asset{
     public:
-    asset(string ticker) : 
-    ticker(ticker){
-        open = make_unique<vector<double>>();
-        high = make_unique<vector<double>>();
-        low = make_unique<vector<double>>();
-        close = make_unique<vector<double>>();
-        volume = make_unique<vector<size_t>>();
-    };
+    asset(string ticker) : ticker(ticker),open(make_unique<vector<double>>()),high(make_unique<vector<double>>()),
+    low(make_unique<vector<double>>()),close(make_unique<vector<double>>()),volume(make_unique<vector<size_t>>()){};
     virtual ~asset()=0;
     // Conveniently input raw candlestick charts.
-    friend void operator>>(unique_ptr<vector<string>> &, unique_ptr<asset> const &);
+    friend void operator>>(vector<string> &, asset &);
     // Conveniently output all asset info represented by its head and corresponding alphas.
     friend void operator<<(std::ostream &, asset const &);
     // Calculate the price movement(%), which is the default alpha to display.
@@ -53,14 +51,14 @@ class asset{
     // Base Fields
     string ticker;
     unsigned int period; // Number of records for one period, e.g., receive ticks every 5 mins with 10 ticks at a time.
-    unique_ptr<vector<double>> open;
-    unique_ptr<vector<double>> high;
-    unique_ptr<vector<double>> low;
-    unique_ptr<vector<double>> close;
-    unique_ptr<vector<size_t>> volume;
-    vector<double> alphas; // Alphas for subclasses
+    priceT open;
+    priceT high;
+    priceT low;
+    priceT close;
+    volT volume;
+    alphaT alphas; // Alphas for subclasses
     static unsigned int width; // Print layout width
-    std::list<string> headerList;
+    list<string> headerList;
 };
 // Base class virtual destructor definition.
 asset::~asset(){}

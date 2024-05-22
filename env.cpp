@@ -1,4 +1,3 @@
-/* Data in this project comes from yahoo!finance */
 #include"assetList.h"
 #include"asset.h"
 #include<mutex>
@@ -13,13 +12,13 @@ using namespace my_algo_trading;
 unsigned int asset::width = 20;
 
 // Number of threads.
-int const Num_Of_Threads = 5;
+unsigned int const Num_Of_Threads = 4;
 
 // Number of price data of an individual asset to arrive at a time.
-unsigned int const Period = 5;
+unsigned int const Num_Of_Price_Data_Per_Period = 10;
 
-// Pre-set individual assets for consideration. Similar to lists of outsider subscriptions.
-// Here we store the ticker name of an asset, which corresponds to the tickers in the "ticks" folder.
+// Individual assets under considerations. Similar to lists of outsider subscription.
+// Here we store the ticker of an asset, which corresponds to the asset symbols in the "price-data" folder.
 vector<string> StockSymbols = {"AAPL", "AMZN", "META", "NVDA", "TSLA"};
 vector<string> IndexSymbols = {"^DJI", "^GSPC", "^IXIC"};
 vector<string> ETFSymbols = {"IEFA", "QQQ", "VTI"};
@@ -49,12 +48,12 @@ bool get_task(vector<string> &task){
     return true;
 }
 
-// Producer Thread Functions: *note: We use daily ticks to simulate intra-day ticks.
-// Read all symbols of a particular asset type. This function is just a demo so we store all asset types in the same folder "ticks".
+// Producer Thread Functions: *note: We use daily price data to simulate intra-day price data.
+// Read all symbols of a particular asset type. This function is just a demo so we store all asset types in the same folder "price-data".
 // In real-world real-time data streaming, we expect that each asset type / individual asset comes from a different (customized) source.
 void read_symbols(vector<string>& symbols, map<string, unique_ptr<ifstream>> &data_src){
     for (auto &symbol : symbols){
-        string file_path = "./ticks/"+symbol+".csv";
+        string file_path = "./price-data/"+symbol+".csv";
         ifstream file;
         file.open(file_path);
         if (file.is_open()){
@@ -79,7 +78,7 @@ void generate_tasks(map<string, unique_ptr<ifstream>> &data_src){
         vector<string> task = {ticker}; // create ticker line
         string line;
         // read price data line
-        for (unsigned int i=0;i<Period;i++){
+        for (unsigned int i=0;i<Num_Of_Price_Data_Per_Period;i++){
             std::getline(*file_ptr,line);
             task.push_back(line);
         }
@@ -94,7 +93,7 @@ void produce(){
     // Generate tasks into the task queue every fixed amount of time.
     for(;;){
         generate_tasks(data_source);
-        this_thread::sleep_for(chrono::seconds(5));
+        this_thread::sleep_for(chrono::seconds(5));//Note4:slides for time
     }}
 
 // Consumer Thread Functions:
@@ -123,6 +122,7 @@ void process_task(vector<string> &task){
     }
 }
 // The main consumer function.
+// Note 2: condition variables don't do spinning
 void consume(){
     // Spin on the task queue and dequeue a task and process it.
     vector<string> task;
@@ -149,10 +149,13 @@ int main(){
     // Print list every fixed amount of time
     // Optimal: Print list based on condition: 1. task_queue is empty 2. every future was waited for
     for(;;){
+        //Note 8: add a printing thread and use a cond var to signal it.
         this_thread::sleep_for(chrono::seconds(5));
         auto time_point = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        // Note 7: constexp
         #if 1 // View by ticker lexigraphically ascending
-        cout << "Stock list: " << ctime(&time_point) << endl;
+        cout << "Stock list: " << ctime(&time_point) << endl;// Note5: std::format -> cout<<string
+        // Note6: c++ time system : chrono, ctime /time_t is c time system
         StockList.view_by_ticker();
         cout << endl;
         cout << "Index list: " << ctime(&time_point) << endl;
