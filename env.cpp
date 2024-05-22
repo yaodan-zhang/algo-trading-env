@@ -7,13 +7,14 @@
 #include<map>
 #include<chrono>
 #include<condition_variable>
+#include<atomic>
 using namespace std;
 using namespace my_algo_trading;
 // Static member initialization for print layout.
 unsigned int asset::width = 20;
 
 // Number of threads.
-unsigned int const Num_Of_Threads = 4;
+unsigned int const Num_Of_Threads = 8;
 
 // Number of price data of an individual asset to arrive at a time.
 unsigned int const Num_Of_Price_Data_Per_Period = 10;
@@ -34,7 +35,10 @@ assetList<my_algo_trading::etf> ETFList;
 // Date Open High Low Close Adj_Close Volume (one or more such line, total number is Num_Of_Price_Data_Per_Period)
 std::list<vector<string>> task_queue;
 mutex m; 
-condition_variable cond;
+condition_variable stage1_cond; // Task queue condition
+condition_variable stage2_cond; // Printing condition
+atomic_bool print_this_period = false;
+atomic_int task_counter;
 
 // Producer Thread Functions: *note: We use daily price data to simulate intra-day price data.
 // Read all symbols of a particular asset type. This function is just a demo so we store all asset types in the same folder "price-data".
@@ -72,7 +76,8 @@ void generate_tasks(map<string, unique_ptr<ifstream>> &data_src){
         }
         lock_guard lk(m);
         task_queue.push_back(task);
-        cond.notify_one();
+        task_counter += 1;
+        stage1_cond.notify_one();
     }
 }
 // The main producer function.
@@ -83,6 +88,7 @@ void produce(){
     // Generate tasks into the task queue every fixed amount of time.
     for(;;){
         generate_tasks(data_source);
+        print_this_period = true;
         this_thread::sleep_for(5s);
     }}
 
@@ -113,16 +119,36 @@ void process_task(vector<string> &task){
 }
 // The main consumer function.
 void consume(){
-    // Spin on the task queue and dequeue a task and process it.
     vector<string> task;
     for(;;){
         {
         unique_lock<mutex> lk(m);
-        cond.wait(lk,[]{return !task_queue.empty();});
+        stage1_cond.wait(lk,[]{return !task_queue.empty();});
         task = move(task_queue.front());
         task_queue.pop_front();
         }
         process_task(task);
+        task_counter -= 1;
+        stage2_cond.notify_one(); // Try to wake up printing thread.
+    }
+}
+
+// Printing Thread Functions:
+void view() {
+    for(;;){
+        unique_lock<mutex> lk(m);
+        stage2_cond.wait(lk,[]{return task_counter==0 && print_this_period;});
+        auto time_point = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        cout << "Stock list: " << ctime(&time_point) << endl;
+        StockList.view_by_ticker();
+        cout << endl;
+        cout << "Index list: " << ctime(&time_point) << endl;
+        IndexList.view_by_ticker();
+        cout << endl;
+        cout << "ETF list: " << ctime(&time_point) << endl;
+        ETFList.view_by_ticker();
+        cout << endl;
+        print_this_period = false;
     }
 }
 
@@ -139,23 +165,14 @@ int main(){
     for(unsigned int i=0;i<Num_Of_Threads;i++){
         consumers.push_back(jthread(consume));
     }
-    // Print list when all tasks of this period are done.
-    for(;;){
-        //Note 8: add a printing thread and use a cond var to signal it.
-        this_thread::sleep_for(5s);
-        auto time_point = chrono::system_clock::to_time_t(chrono::system_clock::now());
-        // Note 7: constexp
+    // Spawn printing thread.
+    jthread viewer(view);
+        
+    /*    // Note 7: constexp
         #if 1 // View by ticker lexigraphically ascending
-        cout << "Stock list: " << ctime(&time_point) << endl;// Note5: std::format -> cout<<string
+        // Note5: std::format -> cout<<string
         // Note6: c++ time system : chrono, ctime /time_t is c time system
-        StockList.view_by_ticker();
-        cout << endl;
-        cout << "Index list: " << ctime(&time_point) << endl;
-        IndexList.view_by_ticker();
-        cout << endl;
-        cout << "ETF list: " << ctime(&time_point) << endl;
-        ETFList.view_by_ticker();
-        cout << endl;
+        
 
         # else // View by price movement descending
         cout << "Stock list: " << ctime(&time_point) << endl;
@@ -168,6 +185,6 @@ int main(){
         ETFList.view_by_gain();
         cout << endl;
         #endif
-    }
+    */
     return 0;
 }
