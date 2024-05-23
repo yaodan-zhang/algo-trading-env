@@ -26,21 +26,25 @@ bool comp_price_move (unique_ptr<T> const &a, unique_ptr<T> const &b){
 // Asset List
 template<typename T> class assetList{
     public:
+    assetList(string val): value(val){}; // Customized list value initialization
     template<typename O>
     friend void operator>>(vector<string>&, assetList<O>&);
     template<typename O>
     friend std::ostream& operator<<(std::ostream&, assetList<O> const&);
     // View asset list by ticker ascending
     void view_by_ticker(){
+        std::cout << "[sorted by ticker]";
         sort(objects.begin(), objects.end(), comp_ticker<T>);
         std::cout << *this;
     }
     // View asset list by price movement(%) descending
-    void view_by_gain(){
+    void view_by_price_move(){
+        std::cout << "[sorted by price move]";
         sort(objects.begin(), objects.end(), comp_price_move<T>);
         std::cout << *this;
     }
     // Fields
+    string value;
     vector<unique_ptr<T>> objects;
 };
 // Create list from ticker symbols
@@ -54,7 +58,9 @@ void operator>>(vector<string>& symbols, assetList<O> &l){
 template<typename O>
 std::ostream& operator<<(std::ostream& os, assetList<O> const &l){
     unsigned int const w = asset::width;
-    // Print header
+    // Print list value/header
+    os << l.value << std::endl;
+    // Print object header
     for(std::string &header:l.objects.front()->headerList){
         os << string(fmt::format("{:^{}}",header,w));
     }

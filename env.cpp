@@ -19,16 +19,20 @@ unsigned int const Num_Of_Threads = 8;
 // Number of price data of an individual asset to arrive at a time.
 unsigned int const Num_Of_Price_Data_Per_Period = 10;
 
+// Mode of viewing the list, can be both.
+constexpr int view_list_by_ticker = 1;
+constexpr int view_list_by_price_move = 1;
+
 // Individual assets under considerations. Similar to lists of outsider subscription.
 // Here we store the ticker of an asset, which corresponds to the asset symbols in the "price-data" folder.
 vector<string> StockSymbols = {"AAPL", "AMZN", "META", "NVDA", "TSLA"};
 vector<string> IndexSymbols = {"^DJI", "^GSPC", "^IXIC"};
 vector<string> ETFSymbols = {"IEFA", "QQQ", "VTI"};
 
-// Initialize asset lists
-assetList<my_algo_trading::stock> StockList;
-assetList<my_algo_trading::index> IndexList;
-assetList<my_algo_trading::etf> ETFList;
+// Initialize asset lists with headers.
+assetList<my_algo_trading::stock> StockList("Stock list");
+assetList<my_algo_trading::index> IndexList("Index list");
+assetList<my_algo_trading::etf> ETFList("ETF list");
 
 // Tread-safe task queue, each task is a vector of strings as follows:
 // ticker (first line)
@@ -134,57 +138,52 @@ void consume(){
 }
 
 // Printing Thread Functions:
+// if constexpr(foo) else
 void view() {
     for(;;){
         unique_lock<mutex> lk(m);
         stage2_cond.wait(lk,[]{return task_counter==0 && print_this_period;});
         auto time_point = chrono::system_clock::to_time_t(chrono::system_clock::now());
-        cout << "Stock list: " << ctime(&time_point) << endl;
-        StockList.view_by_ticker();
-        cout << endl;
-        cout << "Index list: " << ctime(&time_point) << endl;
-        IndexList.view_by_ticker();
-        cout << endl;
-        cout << "ETF list: " << ctime(&time_point) << endl;
-        ETFList.view_by_ticker();
+        auto readable_time_point = put_time(localtime(&time_point), "%F %T:\n");
+        
+        cout << readable_time_point << endl;
+        if constexpr(view_list_by_ticker) {
+            StockList.view_by_ticker();
+            IndexList.view_by_ticker();
+            ETFList.view_by_ticker();
+        }
+
+        if constexpr(view_list_by_price_move) {
+            StockList.view_by_price_move();
+            IndexList.view_by_price_move();
+            ETFList.view_by_price_move();
+        }
         cout << endl;
         print_this_period = false;
     }
 }
 
-// Main function.
+// Main function. 
+/*
+
+*/
 int main(){
     // Initialize asset lists
     StockSymbols>>StockList;
     IndexSymbols>>IndexList;
     ETFSymbols>>ETFList;
+
     // Spawn producer thread.
     jthread producer(produce);
+
     // Spawn consumer threads.
     vector<jthread> consumers;
     for(unsigned int i=0;i<Num_Of_Threads;i++){
         consumers.push_back(jthread(consume));
     }
+
     // Spawn printing thread.
     jthread viewer(view);
         
-    /*    // Note 7: constexp
-        #if 1 // View by ticker lexigraphically ascending
-        // Note5: std::format -> cout<<string
-        // Note6: c++ time system : chrono, ctime /time_t is c time system
-        
-
-        # else // View by price movement descending
-        cout << "Stock list: " << ctime(&time_point) << endl;
-        StockList.view_by_gain();
-        cout << endl;
-        cout << "Index list: " << ctime(&time_point) << endl;
-        IndexList.view_by_gain();
-        cout << endl;
-        cout << "ETF list: " << ctime(&time_point) << endl;
-        ETFList.view_by_gain();
-        cout << endl;
-        #endif
-    */
     return 0;
 }
