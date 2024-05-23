@@ -1,6 +1,6 @@
 # Alpha Library
 
-This folder stores production alphas (implemented by toy alphas) for each asset type. An alpha is a technical indicator calculated using an asset's candlestick price data over a certain timeframe. The alphas aims to provide insights for an asset's price behavioral during the timeframe to signal probable automatic trading activities.
+This folder stores production alphas (implemented by toy alphas) for each asset type, and each asset type are expected to have different alphas of interest in general. An alpha is a technical indicator calculated using an asset's candlestick price data over a certain timeframe. The alphas aims to provide insights for an asset's price behavioral during the timeframe to signal probable automatic trading activities.
 
 ## References:
 

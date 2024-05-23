@@ -18,16 +18,16 @@ unsigned int asset::width = 20;
 unsigned int const Num_Of_Threads = 8;
 
 // Number of price data of an individual asset to arrive at a time.
-unsigned int const Num_Of_Price_Data_Per_Period = 12;
+unsigned int const Num_Of_Price_Data_Per_Period = 6;
 
 // Timeframe over which the data is received.
 auto Timeframe = 5s;
 
 // Modes of viewing the list, can select more than one mode.
-constexpr int view_list_by_ticker = 0;
-constexpr int view_list_by_price_move = 1;
+constexpr int view_list_by_ticker = 1;
+constexpr int view_list_by_price_move = 0;
 
-// Individual assets under considerations. Similar to lists of outsider subscription.
+// Individual assets under considerations. Similar to lists of outsider subscription. More can be added.
 // Here we store the ticker of an asset, which corresponds to the asset symbols in the "price-data" folder.
 vector<string> StockSymbols = {"AAPL", "AMZN", "META", "NVDA", "TSLA"};
 vector<string> IndexSymbols = {"^DJI", "^GSPC", "^IXIC"};
