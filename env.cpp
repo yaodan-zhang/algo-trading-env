@@ -8,8 +8,9 @@
 #include<chrono>
 #include<condition_variable>
 #include<atomic>
+#include<format>
 using namespace std;
-using namespace chrono;
+using namespace std::chrono;
 using namespace my_algo_trading;
 // Static member initialization for print layout.
 unsigned int asset::width = 20;
@@ -163,10 +164,9 @@ void view() {
         unique_lock<mutex> lk(m);
         stage2_cond.wait(lk,[]{return task_counter==0 && print_this_period;});
         }
-        auto time_point = system_clock::to_time_t(system_clock::now());
-        auto readable_time_point = put_time(localtime(&time_point), "%F %T:\n");
+        auto readable_time_point = std::format("{0:%F}T{0:%T%z}:\n",system_clock::now());
         
-        cout << readable_time_point << endl;
+        cout << readable_time_point;
         if constexpr(view_list_by_ticker) {
             StockList.view_by_ticker();
             IndexList.view_by_ticker();
