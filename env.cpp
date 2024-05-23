@@ -8,7 +8,6 @@
 #include<chrono>
 #include<condition_variable>
 #include<atomic>
-#include<format>
 using namespace std;
 using namespace std::chrono;
 using namespace my_algo_trading;
@@ -164,7 +163,7 @@ void view() {
         unique_lock<mutex> lk(m);
         stage2_cond.wait(lk,[]{return task_counter==0 && print_this_period;});
         }
-        auto readable_time_point = std::format("{0:%F}T{0:%T%z}:\n",system_clock::now());
+        auto readable_time_point = format("{0:%F}T{0:%T%z}\n", system_clock::now());
         
         cout << readable_time_point;
         if constexpr(view_list_by_ticker) {

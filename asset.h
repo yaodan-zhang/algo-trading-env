@@ -4,8 +4,7 @@ and possibly different additional features. */
 #include"./alpha/ETFAlpha.h"
 #include"./alpha/IndexAlpha.h"
 #include"./alpha/StockAlpha.h"
-#define FMT_HEADER_ONLY
-#include"./fmt-master/include/fmt/format.h"
+#include<format>
 #include<iostream>
 #include<iomanip>
 #include<regex>
@@ -17,7 +16,7 @@ using std::make_unique;
 using std::ostream;
 using std::round;
 using std::endl;
-using fmt::format;
+using std::format;
 namespace my_algo_trading{
 using priceT = unique_ptr<vector<double>>;
 using volT = unique_ptr<vector<size_t>>;
