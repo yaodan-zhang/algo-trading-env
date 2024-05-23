@@ -1,36 +1,24 @@
 #pragma once
 #include"asset.h"
-#include<vector>
-#include<memory>
-#include<string>
-#include<iostream>
-#include<list>
-#define FMT_HEADER_ONLY
-#include"./fmt-master/include/fmt/format.h"
-using std::list;
-using std::vector;
-using std::unique_ptr;
-using std::string;
 namespace my_algo_trading{
-// Comparitors
+// Comparitors for std::sort, used to view asset list in different ways.
 // Compare ticker name lexigraphically ascending.
 template<typename T> 
 bool comp_ticker (unique_ptr<T> const &a, unique_ptr<T> const &b){
-    return (a->ticker) < (b->ticker);
+    return (a->ticker)<(b->ticker);
 }
-// Compare price percent movement descending.
+// Compare percent price movement descending.
 template<typename T> 
 bool comp_price_move (unique_ptr<T> const &a, unique_ptr<T> const &b){
-    return (a->percent_move()) > (b->percent_move());
+    return (a->percent_move())>(b->percent_move());
 }
-// Asset List
+
+// Asset List.
 template<typename T> class assetList{
     public:
-    assetList(string val): value(val){}; // Customized list value initialization
-    template<typename O>
-    friend void operator>>(vector<string>&, assetList<O>&);
-    template<typename O>
-    friend std::ostream& operator<<(std::ostream&, assetList<O> const&);
+    assetList(string val): value(val){}; // List value constructor, e.g., "Stock list"
+    template<typename O>friend void operator>>(vector<string>&, assetList<O>&);
+    template<typename O>friend ostream& operator<<(ostream&, assetList<O> const&);
     // View asset list by ticker ascending
     void view_by_ticker(){
         std::cout << "[sorted by ticker]";
@@ -43,29 +31,29 @@ template<typename T> class assetList{
         sort(objects.begin(), objects.end(), comp_price_move<T>);
         std::cout << *this;
     }
-    // Fields
     string value;
     vector<unique_ptr<T>> objects;
 };
-// Create list from ticker symbols
+
+// Insert objects into a list using ticker symbols.
 template<typename O>
 void operator>>(vector<string>& symbols, assetList<O> &l){
     for(auto &ticker:symbols){
         l.objects.push_back(make_unique<O>(ticker));
     }
 }
-// Print list
+// Overload print list operator.
 template<typename O>
-std::ostream& operator<<(std::ostream& os, assetList<O> const &l){
+ostream& operator<<(ostream& os, assetList<O> const &l){
     unsigned int const w = asset::width;
-    // Print list value/header
-    os << l.value << std::endl;
-    // Print object header
-    for(std::string &header:l.objects.front()->headerList){
-        os << string(fmt::format("{:^{}}",header,w));
+    // Print list value, typically serving as a list header.
+    os << l.value << endl;
+    // Print object header in the list.
+    for(string &header:l.objects.front()->headerList){
+        os << string(format("{:^{}}",header,w));
     }
-    os << std::endl;
-    // Print objects
+    os << endl;
+    // Print objects that the list holds.
     for(auto &o:l.objects){
         os << *o;
     }

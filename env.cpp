@@ -9,6 +9,7 @@
 #include<condition_variable>
 #include<atomic>
 using namespace std;
+using namespace chrono;
 using namespace my_algo_trading;
 // Static member initialization for print layout.
 unsigned int asset::width = 20;
@@ -19,9 +20,9 @@ unsigned int const Num_Of_Threads = 8;
 // Number of price data of an individual asset to arrive at a time.
 unsigned int const Num_Of_Price_Data_Per_Period = 10;
 
-// Mode of viewing the list, can be both.
+// Modes of viewing the list, can select more than one mode.
 constexpr int view_list_by_ticker = 1;
-constexpr int view_list_by_price_move = 1;
+constexpr int view_list_by_price_move = 0;
 
 // Individual assets under considerations. Similar to lists of outsider subscription.
 // Here we store the ticker of an asset, which corresponds to the asset symbols in the "price-data" folder.
@@ -34,27 +35,35 @@ assetList<my_algo_trading::stock> StockList("Stock list");
 assetList<my_algo_trading::index> IndexList("Index list");
 assetList<my_algo_trading::etf> ETFList("ETF list");
 
-// Tread-safe task queue, each task is a vector of strings as follows:
-// ticker (first line)
-// Date Open High Low Close Adj_Close Volume (one or more such line, total number is Num_Of_Price_Data_Per_Period)
+/*
+    Below is a producer-consumer-viewer environment:
+    stage 1 : producer generate tasks -> consumer process tasks
+    stage 2: consumer process tasks -> viewer print lists
+*/
+
+/*
+    A thread-safe task queue, where each task is a vector of strings as follows:
+    ticker (first line)
+    Date Open High Low Close Adj_Close Volume (Num_Of_Price_Data_Per_Period such lines)
+ */
 std::list<vector<string>> task_queue;
 mutex m; 
-condition_variable stage1_cond; // Task queue condition
-condition_variable stage2_cond; // Printing condition
+condition_variable stage1_cond; // Dequeue condition
+condition_variable stage2_cond; // Print list condition
 atomic_bool print_this_period = false;
-atomic_int task_counter;
+atomic_int task_counter; // Used to measure when all tasks are done.
 
 // Producer Thread Functions: *note: We use daily price data to simulate intra-day price data.
 // Read all symbols of a particular asset type. This function is just a demo so we store all asset types in the same folder "price-data".
 // In real-world live data streaming, we expect that each asset type / individual asset comes from a different (customized) source.
 void read_symbols(vector<string>& symbols, map<string, unique_ptr<ifstream>> &data_src){
     for (auto &symbol : symbols){
-        string file_path = "./price-data/"+symbol+".csv";
+        string file_path = "./price-data/" + symbol + ".csv";
         ifstream file;
         file.open(file_path);
         if (file.is_open()){
             string line;
-            std::getline(file, line); // Skip header row
+            getline(file, line); // Skip header row
             data_src[symbol] = make_unique<ifstream>(move(file));
         } else{
             throw runtime_error("Can't open " + file_path + "!");
@@ -67,13 +76,15 @@ void read_all_data(map<string, unique_ptr<ifstream>> &data_src){
     read_symbols(StockSymbols, data_src);
     read_symbols(IndexSymbols, data_src);
     read_symbols(ETFSymbols, data_src);
+    // More can be added so the program can scale.
 }
+
 // Generate tasks and insert them into the global task queue.
 void generate_tasks(map<string, unique_ptr<ifstream>> &data_src){
     for (auto &[ticker,file_ptr] : data_src) {
-        vector<string> task = {ticker}; // create ticker line
+        vector<string> task = {ticker}; // create the ticker line / 1st line
         string line;
-        // read price data line
+        // read price data lines
         for (unsigned int i=0;i<Num_Of_Price_Data_Per_Period;i++){
             std::getline(*file_ptr,line);
             task.push_back(line);
@@ -99,16 +110,21 @@ void produce(){
 // Consumer Thread Functions:
 template<typename T>
 bool process_task_asset_type(vector<string> &task, string &ticker, vector<string> &type_symbols, assetList<T> &type_list){
-    auto check_ticker = [=](unique_ptr<T>&ap){return ap->ticker==ticker;};
-    if(std::find(type_symbols.begin(),type_symbols.end(),ticker)!=type_symbols.end()){
-        auto ap = std::find_if(type_list.objects.begin(),type_list.objects.end(),check_ticker);
-        if (ap == type_list.objects.end()) {return false;}
-        else {
+    auto check_ticker = [=](unique_ptr<T>&ap){return ap->ticker==ticker;}; // lambda checker
+    if(find(type_symbols.begin(),type_symbols.end(),ticker)!=type_symbols.end())
+    {
+        auto ap = find_if(type_list.objects.begin(),type_list.objects.end(),check_ticker);
+        if (ap == type_list.objects.end()) 
+        {
+            return false;
+        } else 
+        {
             task>>dynamic_cast<asset&>(**ap);
             (**ap).finalize();
             return true;
-            }
-    } else {
+        }
+    } else
+    {
         return false;
     }
 }
@@ -125,7 +141,7 @@ void process_task(vector<string> &task){
 void consume(){
     vector<string> task;
     for(;;){
-        {
+        { // RAII care for unique lock
         unique_lock<mutex> lk(m);
         stage1_cond.wait(lk,[]{return !task_queue.empty();});
         task = move(task_queue.front());
@@ -133,17 +149,18 @@ void consume(){
         }
         process_task(task);
         task_counter -= 1;
-        stage2_cond.notify_one(); // Try to wake up printing thread.
+        stage2_cond.notify_one(); // Try to wake up the printing thread.
     }
 }
 
 // Printing Thread Functions:
-// if constexpr(foo) else
 void view() {
     for(;;){
+        { // RAII care for unique lock
         unique_lock<mutex> lk(m);
         stage2_cond.wait(lk,[]{return task_counter==0 && print_this_period;});
-        auto time_point = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        }
+        auto time_point = system_clock::to_time_t(system_clock::now());
         auto readable_time_point = put_time(localtime(&time_point), "%F %T:\n");
         
         cout << readable_time_point << endl;
@@ -164,21 +181,19 @@ void view() {
 }
 
 // Main function. 
-/*
-
-*/
 int main(){
     // Initialize asset lists
     StockSymbols>>StockList;
     IndexSymbols>>IndexList;
     ETFSymbols>>ETFList;
-
+    
+    // We use jthread as an RAII improvement from thread.
     // Spawn producer thread.
     jthread producer(produce);
 
     // Spawn consumer threads.
     vector<jthread> consumers;
-    for(unsigned int i=0;i<Num_Of_Threads;i++){
+    for(unsigned int i = 0 ; i < Num_Of_Threads ; i++){
         consumers.push_back(jthread(consume));
     }
 

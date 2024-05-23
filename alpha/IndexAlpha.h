@@ -5,23 +5,29 @@
 #include<algorithm>
 #include<memory>
 #include <functional>
+using std::list;
+using std::string;
+using std::unique_ptr;
+using std::vector;
+using std::function;
+using std::max_element;
+using std::min_element;
 namespace my_algo_trading{
-std::list<std::string> IndexAlphaList = {
+list<string> IndexAlphaList = {
     "RSI", // Relative Strength Index
     "WILLIAMS %R" // Williams % R
 };
 // Index type definitions.
-using IPriceT = std::unique_ptr<std::vector<double>>&;
-using IVolT = std::unique_ptr<std::vector<size_t>>&;
+using IPriceT = unique_ptr<vector<double>>&;
+using IVolT = unique_ptr<vector<size_t>>&;
 using IDataT = unsigned int&;// Number of index price data per period
-using IAlphaT = std::function<double(IPriceT,IPriceT,IPriceT,IPriceT,IVolT,IDataT)>;
+using IAlphaT = function<double(IPriceT,IPriceT,IPriceT,IPriceT,IVolT,IDataT)>;
 // Index alpha declarations.
 double RSI(IPriceT, IPriceT, IPriceT, IPriceT, IVolT, IDataT);
 double WilliamsR(IPriceT, IPriceT, IPriceT, IPriceT, IVolT, IDataT);
-std::vector<IAlphaT> IndexAlphaHelper = {RSI, WilliamsR};
+vector<IAlphaT> IndexAlphaHelper = {RSI, WilliamsR};
 
-// Index alpha Implementations: Formula came from https://school.stockcharts.com/doku.php?id=technical_indicators:relative_strength_index_rsi
-// and https://docs.anychart.com/Stock_Charts/Technical_Indicators/Mathematical_Description
+// Index alpha Implementations:
 // 1. Calculate RSI
 double RSI(IPriceT open, IPriceT, IPriceT, IPriceT close, IVolT, IDataT period){
     // Calculate sum of gains and sum of absolute losses using same day's open and close
@@ -34,10 +40,10 @@ double RSI(IPriceT open, IPriceT, IPriceT, IPriceT close, IVolT, IDataT period){
     double RS = sum_of_gain/sum_of_abs_loss;
     return 100-100/(1+RS);
 }
-// 2. Calculate Williams % R
+// 2. Calculate Williams %R
 double WilliamsR(IPriceT, IPriceT high, IPriceT low, IPriceT close, IVolT, IDataT period){
-    auto max_high = std::max_element(high->begin(), high->end());
-    auto min_low = std::min_element(low->begin(), low->end());
+    auto max_high = max_element(high->begin(), high->end());
+    auto min_low = min_element(low->begin(), low->end());
     double R = ((*close)[period-1]-(*max_high))/((*max_high)-(*min_low))*100;
     return R;
 }
