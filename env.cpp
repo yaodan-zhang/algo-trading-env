@@ -18,11 +18,14 @@ unsigned int asset::width = 20;
 unsigned int const Num_Of_Threads = 8;
 
 // Number of price data of an individual asset to arrive at a time.
-unsigned int const Num_Of_Price_Data_Per_Period = 10;
+unsigned int const Num_Of_Price_Data_Per_Period = 12;
+
+// Timeframe over which the data is received.
+auto Timeframe = 5s;
 
 // Modes of viewing the list, can select more than one mode.
-constexpr int view_list_by_ticker = 1;
-constexpr int view_list_by_price_move = 0;
+constexpr int view_list_by_ticker = 0;
+constexpr int view_list_by_price_move = 1;
 
 // Individual assets under considerations. Similar to lists of outsider subscription.
 // Here we store the ticker of an asset, which corresponds to the asset symbols in the "price-data" folder.
@@ -85,13 +88,13 @@ void generate_tasks(map<string, unique_ptr<ifstream>> &data_src){
         vector<string> task = {ticker}; // create the ticker line / 1st line
         string line;
         // read price data lines
-        for (unsigned int i=0;i<Num_Of_Price_Data_Per_Period;i++){
+        for (unsigned int i=0; i<Num_Of_Price_Data_Per_Period; i++){
             std::getline(*file_ptr,line);
             task.push_back(line);
         }
         lock_guard lk(m);
         task_queue.push_back(task);
-        task_counter += 1;
+        task_counter+=1;
         stage1_cond.notify_one();
     }
 }
@@ -104,7 +107,7 @@ void produce(){
     for(;;){
         generate_tasks(data_source);
         print_this_period = true;
-        this_thread::sleep_for(5s);
+        this_thread::sleep_for(Timeframe);
     }}
 
 // Consumer Thread Functions:
@@ -200,5 +203,6 @@ int main(){
     // Spawn printing thread.
     jthread viewer(view);
         
+    // Ending is not taken care.
     return 0;
 }
