@@ -1,8 +1,8 @@
 # Real-time Algorithmic Trading Environment
 
-Originated from a piece of idea in [stock market program](https://www.netdevmike.com/project/c-stock-market-program), I built an real-time algorithmic trading environment using C++20 that mimics live data-streaming input and calculates technical indicators (alphas) using each asset's price data over that period, the calculated asset lists are then displayed to the user. The results can be further fed to conduct automatic trading. Asset types currently supported are equity, index, and ETF, out of their data availability.
+Originated from a piece of idea in [stock market program](https://www.netdevmike.com/project/c-stock-market-program), I built a real-time algorithmic trading environment using C++20 that mimics live data-streaming input and calculates technical indicators (alphas) using each asset's price data over that period, the calculated asset lists are then displayed to the user. The results can be further fed to conduct automatic trading. Asset types currently supported are equity, index, and ETF, out of their data availability.
 
-After compiling through `env.cpp`, the user is expected to see dynamically updated output every predefined amount of time (5s in our case), which is the timeframe over which the data is streamed, and the output contains all asset alphas related to that period. The output list can be sorted by ticker lexigraphcally ascending or by price movement descending by setting the mode variable in the `env.cpp`. Output format: (updated every 5s)
+After compiling through `env.cpp`, the user is expected to see dynamically updated output every predefined amount of time (5s in my case), which is the timeframe over which the data is streamed, and the output contains all asset alphas related to that period. The output list can be sorted by ticker lexigraphcally ascending or by price movement descending by setting the mode variable in the `env.cpp`. Output format: (updated every 5s)
 
 ![output](./terminal_output.png)
 
