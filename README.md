@@ -6,6 +6,6 @@ After compiling through the mainpoint `env.cpp`, the user is expected to see dyn
 
 ![output](./terminal_output.png)
 
-Further leverages: As mentioned above, the calculated asset alphas over each period can be used to conduct automatic trading based on some well-researched thresholds, obviously depending on which alpha as well. At the same time, we can report the trading activities over each such period to the terminal output. We can expect automatic long or short for an asset(s), dynamically updating.
+Further leverages: As mentioned above, the calculated asset alphas over each period can be used to conduct automatic trading based on some well-researched thresholds, obviously depending on which alpha it is as well. At the same time, we can report the trading activities over each such period to the user output. We can expect automatic long or short for an asset(s), dynamically updating over time.
 
 The projects uses a multi-stages producer-consumer environment protocol, aka a data generating thread, a data processing thread, and a printing thread, which is suggested by Professor Mike Spertus at University of Chicago. The primary goal of this project serves as the course assessment in Advanced C++ master's course taught by Professor Mike Spertus at University of Chicago, which also pertaining to my personal interest and I enjoy greatly doing it. Some implementation details also received precious feedback from Mike over his office hours. The project was spoken highly of by Mike when it was completely finished.
