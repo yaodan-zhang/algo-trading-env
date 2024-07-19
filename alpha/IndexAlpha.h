@@ -1,3 +1,6 @@
+/*
+    Index Alpha Library
+*/
 #pragma once
 #include<list>
 #include<string>
@@ -12,23 +15,26 @@ using std::vector;
 using std::function;
 using std::max_element;
 using std::min_element;
-namespace my_algo_trading{
+
+namespace my_algo_trading {
+// Pre-selected alphas for index class
 list<string> IndexAlphaList = {
     "RSI", // Relative Strength Index
     "WILLIAMS %R" // Williams % R
 };
-// Index type definitions.
+
 using IPriceT = unique_ptr<vector<double>>&;
 using IVolT = unique_ptr<vector<size_t>>&;
-using IDataT = unsigned int&;// Number of index price data per period
+using IDataT = unsigned int&;// Number of data per period
 using IAlphaT = function<double(IPriceT,IPriceT,IPriceT,IPriceT,IVolT,IDataT)>;
-// Index alpha declarations.
+
+// alpha declarations
 double RSI(IPriceT, IPriceT, IPriceT, IPriceT, IVolT, IDataT);
 double WilliamsR(IPriceT, IPriceT, IPriceT, IPriceT, IVolT, IDataT);
 vector<IAlphaT> IndexAlphaHelper = {RSI, WilliamsR};
 
-// Index alpha Implementations:
-// 1. Calculate RSI
+// alpha implementation:
+// 1. calculate RSI
 double RSI(IPriceT open, IPriceT, IPriceT, IPriceT close, IVolT, IDataT period){
     // Calculate sum of gains and sum of absolute losses using same day's open and close
     double sum_of_gain = 0;
@@ -40,7 +46,7 @@ double RSI(IPriceT open, IPriceT, IPriceT, IPriceT close, IVolT, IDataT period){
     double RS = sum_of_gain/sum_of_abs_loss;
     return 100-100/(1+RS);
 }
-// 2. Calculate Williams %R
+// 2. calculate Williams %R
 double WilliamsR(IPriceT, IPriceT high, IPriceT low, IPriceT close, IVolT, IDataT period){
     auto max_high = max_element(high->begin(), high->end());
     auto min_low = min_element(low->begin(), low->end());
