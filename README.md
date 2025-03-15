@@ -1,4 +1,4 @@
-# Real-time Algorithmic Trading Environment
+# An Algorithmic Trading Environment
 
 Out of my personal interest in stock market and high-performing program, I built a real-time algorithmic trading environment in C++20 that mimics live data-streaming inputs and calculates the technical indicators (alphas) using each asset's price data every certain amount of time, the calculated asset list is displayed to the user in terms of assets' alphas. 
 
