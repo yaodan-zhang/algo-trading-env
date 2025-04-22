@@ -29,7 +29,7 @@ g++ -std=c++20 -O2 main.cpp -o trading_sim
 ```
 
 ### Project Status
-Core simulation engine: ✔️ Completed
+Core simulation engine: ✔️ Completed  
 Strategy module: ✔️ Customizable
 
 ### Future work: 
