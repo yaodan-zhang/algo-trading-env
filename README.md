@@ -28,12 +28,10 @@ g++ -std=c++20 -O2 main.cpp -o trading_sim
 ./trading_sim
 ```
 
-### Project Status
+## Project Status
 Core simulation engine: ✔️ Completed  
 Alpha library: ✔️ Customizable
+Future work: Logging enhancements, performance benchmarking
 
-### Future work 
-Logging enhancements, performance benchmarking
-
-### License
+## License
 This project is for educational and non-commercial use.
