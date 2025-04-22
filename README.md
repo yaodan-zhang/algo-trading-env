@@ -32,7 +32,7 @@ g++ -std=c++20 -O2 main.cpp -o trading_sim
 Core simulation engine: ✔️ Completed  
 Alpha library: ✔️ Customizable
 
-### Future work: 
+### Future work 
 Logging enhancements, performance benchmarking
 
 ### License
