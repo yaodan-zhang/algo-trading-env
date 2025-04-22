@@ -24,8 +24,8 @@ Originally built to explore high-performance trading systems, this simulator pro
 
 ### Build & Run
 ```bash
-g++ -std=c++20 -O2 main.cpp -o trading_sim
-./trading_sim
+g++ -std=c++20 -O2 env.cpp -o env
+./env
 ```
 
 ## Project Status
