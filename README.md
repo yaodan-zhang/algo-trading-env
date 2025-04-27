@@ -32,6 +32,3 @@ g++ -std=c++20 -O2 env.cpp -o env
 Core simulation engine: ✔️ Completed  
 Alpha library: ✔️ Customizable  
 Future work: Logging enhancements, performance benchmarking
-
-## License
-This project is for educational and non-commercial use.
