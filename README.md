@@ -7,10 +7,10 @@ This project simulates a live algorithmic trading environment designed to test t
 Originally built to explore high-performance trading systems, this simulator provides a flexible framework for developing and evaluating trading signals (*alphas*).
 
 ## Key Features
-- 🚀 **Multithreaded Asset Streaming**: Simulates real-time market data feeds.
-- ⚡ **Low-Latency Execution Engine**: Optimized for speed using C++20 concurrency features.
-- 🔒 **RAII and Safe Concurrency**: Ensures memory safety and thread-safe operations.
-- 📊 **Customizable Trading Logic**: Plug-and-play architecture for implementing trading strategies.
+- **Multithreaded Asset Streaming**: Simulates real-time market data feeds.
+- **Low-Latency Execution Engine**: Optimized for speed using C++20 concurrency features.
+- **RAII and Safe Concurrency**: Ensures memory safety and thread-safe operations.
+- **Customizable Trading Logic**: Plug-and-play architecture for implementing trading strategies.
 
 ## Technologies Used
 - **C++20**
